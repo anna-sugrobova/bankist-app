@@ -142,7 +142,7 @@ const updateUI = function(acc) {
 }
 
 const startLogOutTimer = function() {
-  let time = 10;
+  let time = 60000;
   const tick = function() {
     const min = String(Math.trunc(time / 60)).padStart(2, 0);
     const sec = String(time % 60).padStart(2, 0);
