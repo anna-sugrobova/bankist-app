@@ -6,6 +6,19 @@ const account1 = {
   movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
   interestRate: 1.2, // %
   pin: 1111,
+
+  movementsDates: [
+    '2019-01-28T09:15:04.904Z',
+    '2019-04-01T10:17:24.185Z',
+    '2019-05-27T17:01:17.194Z',
+    '2019-07-11T23:36:17.929Z',
+    '2019-11-18T21:31:17.178Z',
+    '2019-12-23T07:42:02.383Z',
+    '2020-03-08T14:11:59.604Z',
+    '2020-03-12T10:51:36.790Z',
+  ],
+  currency: 'EUR',
+  locale: 'pt-PT',
 };
 
 const account2 = {
@@ -13,23 +26,22 @@ const account2 = {
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
   pin: 2222,
+
+  movementsDates: [
+    '2019-01-25T14:18:46.235Z',
+    '2019-02-05T16:33:06.386Z',
+    '2019-03-10T14:43:26.374Z',
+    '2019-04-25T18:49:59.371Z',
+    '2019-11-01T13:15:33.035Z',
+    '2019-11-30T09:48:16.867Z',
+    '2019-12-25T06:04:23.907Z',
+    '2020-02-26T12:01:20.894Z',
+  ],
+  currency: 'USD',
+  locale: 'en-US',
 };
 
-const account3 = {
-  owner: 'Steven Thomas Williams',
-  movements: [200, -200, 340, -300, -20, 50, 400, -460],
-  interestRate: 0.7,
-  pin: 3333,
-};
-
-const account4 = {
-  owner: 'Sarah Smith',
-  movements: [430, 1000, 700, 50, 90],
-  interestRate: 1,
-  pin: 4444,
-};
-
-const accounts = [account1, account2, account3, account4];
+const accounts = [account1, account2];
 
 const labelWelcome = document.querySelector('.welcome');
 const labelDate = document.querySelector('.date');
@@ -56,15 +68,30 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-const displayMovements = function (movements) {
+const formatCurrency = function(value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(value);
+}
+
+const displayMovements = function (account, sort = false) {
   containerMovements.innerHTML = '';
 
-  movements.forEach(function (mov, i) {
+  const movsToDisplay = sort ? account.movements.slice().sort((a, b) => a - b) : account.movements;
+
+  movsToDisplay.forEach(function (mov, i) {
     const movementType = mov > 0 ? 'deposit' : 'withdrawal';
+
+    const date = new Date(account.movementsDates[i]);
+    const displayDate = new Intl.DateTimeFormat(account.locale).format(date);
+    const formattedMov = formatCurrency(mov, account.locale, account.currency);
+
     const movementsRowTemplate = `
       <div class="movements__row">
         <div class="movements__type movements__type--${movementType}">${i + 1} ${movementType}</div>
-        <div class="movements__value">${mov}€</div>
+        <div class="movements__date">${displayDate}</div>
+        <div class="movements__value">${formattedMov}</div>
       </div>
     `;
     containerMovements.insertAdjacentHTML('afterbegin', movementsRowTemplate);
@@ -73,26 +100,26 @@ const displayMovements = function (movements) {
 
 const calcDisplayBalance = function(account) {
   account.balance = account.movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${account.balance}€`;
+  labelBalance.textContent = formatCurrency(account.balance, account.locale, account.currency);
 }
 
 const calcDisplaySummary = function(account) {
   const incomes = account.movements
   .filter(mov => mov > 0)
   .reduce((acc, mov) => acc + mov, 0);
-  labelSumIn.textContent = `${incomes}€`;
+  labelSumIn.textContent = formatCurrency(incomes, account.locale, account.currency);
 
   const sumOut = account.movements
   .filter(mov => mov < 0)
   .reduce((acc, mov) => acc + mov, 0);
-  labelSumOut.textContent = `${Math.abs(sumOut)}€`;
+  labelSumOut.textContent = formatCurrency(Math.abs(sumOut), account.locale, account.currency);
 
   const interest = account.movements
   .filter(mov => mov > 0)
   .map(deposit => deposit * account.interestRate / 100)
   .filter(int => int >= 1)
   .reduce((acc, int) => acc + int, 0);
-  labelSumInterest.textContent = `${interest}€`;
+  labelSumInterest.textContent = formatCurrency(interest, account.locale, account.currency);
 }
 
 const createUsernames = function(accounts) {
@@ -109,7 +136,7 @@ createUsernames(accounts);
 let currentAccount;
 
 const updateUI = function(acc) {
-  displayMovements(acc.movements);
+  displayMovements(acc);
   calcDisplayBalance(acc);
   calcDisplaySummary(acc);
 }
@@ -121,6 +148,18 @@ btnLogin.addEventListener('click', function(e) {
   if (currentAccount?.pin === Number(inputLoginPin.value)) {
     labelWelcome.textContent = `Welcome back, ${currentAccount.owner.split(' ')[0]}`;
     containerApp.style.opacity = 100;
+
+    const currentDate = new Date();
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    }
+    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, options).format(currentDate)
+
+
     inputLoginUsername.value = inputLoginPin.value = '';
     inputLoginPin.blur()
 
@@ -142,6 +181,9 @@ btnTransfer.addEventListener('click', function(e) {
     ) {
     currentAccount.movements.push(-amount);
     receiverAcc.movements.push(amount);
+    
+    currentAccount.movementsDates.push(new Date().toISOString());
+    receiverAcc.movementsDates.push(new Date().toISOString());
 
     updateUI(currentAccount);
   }
@@ -149,12 +191,13 @@ btnTransfer.addEventListener('click', function(e) {
 
 btnLoan.addEventListener('click', function(e) {
   e.preventDefault();
-  const amount = Number(inputLoanAmount.value);
+  const amount = Math.floor(inputLoanAmount.value);
 
   if(amount > 0 &&
     currentAccount.movements.some((mov) => mov >= amount * 0.1)
   ) {
     currentAccount.movements.push(amount);
+    currentAccount.movementsDates.push(new Date().toISOString());
 
     updateUI(currentAccount);
   }
@@ -175,3 +218,10 @@ btnClose.addEventListener('click', function(e) {
   inputCloseUsername.value = inputClosePin.value = '';
   inputClosePin.blur();
 });
+
+let sorted = false;
+btnSort.addEventListener('click', function(e) {
+  e.preventDefault();
+  displayMovements(currentAccount, !sorted);
+  sorted = !sorted;
+})
