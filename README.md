@@ -32,3 +32,16 @@ The project has two accounts. You can use both to see what the app looks like fo
  - pin: '2222'
 
 Use the same user logins to transfer money.
+
+### ⚙️ How to run locally
+
+* install dependencies
+```js
+npm install
+// or
+yarn
+```
+* start local server on localhost:3000
+```
+npm run serve
+```
