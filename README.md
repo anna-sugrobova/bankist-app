@@ -39,9 +39,9 @@ Use the same user logins to transfer money.
 ```js
 npm install
 // or
-yarn
+yarn install
 ```
 * start local server on localhost:3000
 ```
-npm run serve
+npm run start
 ```
